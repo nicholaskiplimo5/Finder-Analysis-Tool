@@ -18,6 +18,10 @@ Early development. Current:
   multiple-comparison correction across symbols and lags.
 - FastAPI layer (`backend/app/api/`) exposing the above as JSON, plus an
   SSE endpoint for live ticks.
+- React dashboard (`frontend/`): frequency bars, ACF plot, conditional-
+  probability heatmap, streak-length comparison, rise/fall summary, and
+  a live tick feed. Every chart has a table-view twin and shows its
+  p-value/CI directly in text -- nothing is color-coded as a signal.
 
 ## Local dev
 
@@ -26,8 +30,12 @@ cp .env.example .env   # fill in DERIV_APP_ID (register at api.deriv.com)
 docker compose up
 ```
 
-API docs (Swagger UI) at http://localhost:8000/docs once the `api`
-service is up.
+Dashboard at http://localhost:5173, API docs (Swagger UI) at
+http://localhost:8000/docs, once the services are up.
+
+For frontend-only iteration without Docker: `cd frontend && npm install
+&& cp .env.example .env && npm run dev` (needs the `api` service running
+separately, e.g. via `docker compose up postgres api`).
 
 ## License
 
