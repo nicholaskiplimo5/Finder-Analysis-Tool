@@ -9,9 +9,15 @@ ever.
 
 ## Status
 
-Early development. Current: ingestion service (async Deriv WS client,
-reconnect/backoff, staleness watchdog, gap backfill, writes to Postgres).
-See `backend/`.
+Early development. Current:
+- Ingestion service (async Deriv WS client, reconnect/backoff, staleness
+  watchdog, gap backfill, writes to Postgres).
+- Analysis module (`backend/app/analysis/`): digit frequency + chi-square,
+  ACF, conditional-probability matrix, streak lengths, rise/fall runs --
+  pure numpy/scipy/statsmodels functions, windowed and cached, with
+  multiple-comparison correction across symbols and lags.
+- FastAPI layer (`backend/app/api/`) exposing the above as JSON, plus an
+  SSE endpoint for live ticks.
 
 ## Local dev
 
@@ -19,6 +25,9 @@ See `backend/`.
 cp .env.example .env   # fill in DERIV_APP_ID (register at api.deriv.com)
 docker compose up
 ```
+
+API docs (Swagger UI) at http://localhost:8000/docs once the `api`
+service is up.
 
 ## License
 

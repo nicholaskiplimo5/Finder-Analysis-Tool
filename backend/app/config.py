@@ -34,11 +34,16 @@ class Settings(BaseSettings):
     write_batch_max_size: int = 200
     write_batch_max_wait_seconds: float = 1.0
 
+    # API layer (module 3). Read by the ingestion process too since both
+    # share this Settings class and one .env -- unused there, harmless.
+    cors_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]
+    live_tick_poll_interval_seconds: float = 1.0
+
     @property
     def deriv_ws_url(self) -> str:
         return f"wss://ws.derivws.com/websockets/v3?app_id={self.deriv_app_id}"
 
-    @field_validator("symbols", mode="before")
+    @field_validator("symbols", "cors_origins", mode="before")
     @classmethod
     def _split_csv(cls, value: object) -> object:
         if isinstance(value, str):

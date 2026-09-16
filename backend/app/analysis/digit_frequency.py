@@ -17,7 +17,7 @@ import numpy as np
 from scipy import stats as scipy_stats
 from statsmodels.stats.proportion import proportion_confint
 
-N_DIGITS = 10
+from app.analysis._validation import N_DIGITS, validate_digit_array
 
 
 @dataclass(frozen=True, slots=True)
@@ -36,17 +36,7 @@ class DigitFrequencyResult:
 def digit_frequency_test(
     digits: np.ndarray, *, confidence: float = 0.95
 ) -> DigitFrequencyResult:
-    digits = np.asarray(digits)
-    if digits.ndim != 1:
-        raise ValueError("digits must be a 1-D array")
-    if digits.size == 0:
-        raise ValueError("digits must be non-empty")
-    if not np.issubdtype(digits.dtype, np.integer):
-        if not np.all(np.equal(np.mod(digits, 1), 0)):
-            raise ValueError("digits must be whole numbers")
-        digits = digits.astype(np.int64)
-    if digits.min() < 0 or digits.max() > 9:
-        raise ValueError("digits must be in [0, 9]")
+    digits = validate_digit_array(digits)
     if not (0 < confidence < 1):
         raise ValueError("confidence must be in (0, 1)")
 

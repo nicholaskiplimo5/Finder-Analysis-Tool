@@ -1,30 +1,29 @@
 import asyncpg
 
 from app.analysis.cache import WindowedStatCache
-from app.analysis.digit_frequency import DigitFrequencyResult, digit_frequency_test
 from app.analysis.multiple_comparisons import MultipleComparisonResult, correct_p_values
 from app.analysis.partial_batch import run_partial_batch
-from app.analysis.repository import fetch_recent_digits
+from app.analysis.repository import fetch_recent_quotes
+from app.analysis.rise_fall import RiseFallRunResult, rise_fall_run_test
 from app.db import get_last_epoch
 
 
-class DigitFrequencyService:
+class RiseFallService:
     def __init__(self, pool: asyncpg.Pool, cache: WindowedStatCache | None = None) -> None:
         self._pool = pool
         self._cache = cache if cache is not None else WindowedStatCache()
 
-    async def get(self, symbol: str, window_size: int) -> DigitFrequencyResult:
-        """Chi-square digit-frequency test over the last `window_size`
-        ticks of `symbol`. Recomputes only if the symbol's latest stored
-        epoch has advanced since the last call with this (symbol,
-        window_size) -- no rescan of unchanged data."""
+    async def get(self, symbol: str, window_size: int) -> RiseFallRunResult:
+        """Rise/fall run test over the last `window_size` quotes of
+        `symbol`. Recomputes only if the symbol's latest stored epoch has
+        advanced since the last call."""
         latest_epoch = await get_last_epoch(self._pool, symbol)
 
-        async def compute() -> DigitFrequencyResult:
-            digits = await fetch_recent_digits(self._pool, symbol, window_size)
-            if digits.size == 0:
+        async def compute() -> RiseFallRunResult:
+            quotes = await fetch_recent_quotes(self._pool, symbol, window_size)
+            if quotes.size == 0:
                 raise ValueError(f"no ticks stored for symbol {symbol!r}")
-            return digit_frequency_test(digits)
+            return rise_fall_run_test(quotes)
 
         return await self._cache.get_or_compute(
             (symbol, window_size), version=latest_epoch, compute=compute
@@ -37,11 +36,11 @@ class DigitFrequencyService:
         *,
         method: str = "holm",
         alpha: float = 0.05,
-    ) -> tuple[dict[str, DigitFrequencyResult], MultipleComparisonResult, dict[str, str]]:
-        """Per-symbol results plus a multiple-comparison correction across
-        the symbols that had enough data. A symbol without data yet (e.g.
-        still mid cold-start backfill) is skipped rather than failing the
-        whole batch -- see the returned `skipped` mapping."""
+    ) -> tuple[dict[str, RiseFallRunResult], MultipleComparisonResult, dict[str, str]]:
+        """Per-symbol rise/fall run test plus a multiple-comparison
+        correction across the symbols that had enough data. A symbol
+        without data yet is skipped rather than failing the whole batch
+        -- see the returned `skipped` mapping."""
         results, skipped = await run_partial_batch(
             symbols, lambda symbol: self.get(symbol, window_size)
         )
