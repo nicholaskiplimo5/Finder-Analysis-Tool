@@ -28,8 +28,9 @@ async def get_conditional_digit_summary(
     service: ConditionalDigitService = Depends(get_conditional_digit_service),
     settings: Settings = Depends(get_settings),
 ) -> ConditionalDigitSummaryResponse:
-    results, correction = await service.get_many(settings.symbols, window)
+    results, correction, skipped = await service.get_many(settings.symbols, window)
     return ConditionalDigitSummaryResponse(
         results={s: ConditionalDigitResponse.from_result(r) for s, r in results.items()},
         correction=MultipleComparisonResponse.from_result(correction),
+        skipped=skipped,
     )

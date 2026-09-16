@@ -24,8 +24,9 @@ async def get_digit_frequency_summary(
     service: DigitFrequencyService = Depends(get_digit_frequency_service),
     settings: Settings = Depends(get_settings),
 ) -> DigitFrequencySummaryResponse:
-    results, correction = await service.get_many(settings.symbols, window)
+    results, correction, skipped = await service.get_many(settings.symbols, window)
     return DigitFrequencySummaryResponse(
         results={s: DigitFrequencyResponse.from_result(r) for s, r in results.items()},
         correction=MultipleComparisonResponse.from_result(correction),
+        skipped=skipped,
     )

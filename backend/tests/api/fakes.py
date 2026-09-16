@@ -83,10 +83,25 @@ def make_rise_fall_result() -> RiseFallRunResult:
     )
 
 
+def _fake_get_many(result, symbols, skipped_symbols, *, method="holm", alpha=0.05):
+    """Shared get_many behavior for the fakes below: mirrors the real
+    services' partial-tolerance contract (skip symbols that have no
+    data, raise if none are left) without hitting a DB."""
+    results = {s: result for s in symbols if s not in skipped_symbols}
+    skipped = {s: "no ticks stored (fake)" for s in symbols if s in skipped_symbols}
+    if not results:
+        raise ValueError(f"no configured symbol has enough data yet: {skipped}")
+    correction = correct_p_values(
+        list(results.keys()), [r.p_value for r in results.values()], method=method, alpha=alpha
+    )
+    return results, correction, skipped
+
+
 class FakeDigitFrequencyService:
-    def __init__(self, result=None, raise_error: Exception | None = None):
+    def __init__(self, result=None, raise_error: Exception | None = None, skipped_symbols=()):
         self._result = result if result is not None else make_digit_frequency_result()
         self._raise_error = raise_error
+        self._skipped_symbols = set(skipped_symbols)
 
     async def get(self, symbol, window):
         if self._raise_error is not None:
@@ -96,11 +111,7 @@ class FakeDigitFrequencyService:
     async def get_many(self, symbols, window, *, method="holm", alpha=0.05):
         if self._raise_error is not None:
             raise self._raise_error
-        results = {s: self._result for s in symbols}
-        correction = correct_p_values(
-            list(results.keys()), [r.p_value for r in results.values()], method=method, alpha=alpha
-        )
-        return results, correction
+        return _fake_get_many(self._result, symbols, self._skipped_symbols, method=method, alpha=alpha)
 
 
 class FakeACFService:
@@ -119,9 +130,10 @@ class FakeACFService:
 
 
 class FakeConditionalDigitService:
-    def __init__(self, result=None, raise_error: Exception | None = None):
+    def __init__(self, result=None, raise_error: Exception | None = None, skipped_symbols=()):
         self._result = result if result is not None else make_conditional_digit_result()
         self._raise_error = raise_error
+        self._skipped_symbols = set(skipped_symbols)
 
     async def get(self, symbol, window):
         if self._raise_error is not None:
@@ -131,17 +143,14 @@ class FakeConditionalDigitService:
     async def get_many(self, symbols, window, *, method="holm", alpha=0.05):
         if self._raise_error is not None:
             raise self._raise_error
-        results = {s: self._result for s in symbols}
-        correction = correct_p_values(
-            list(results.keys()), [r.p_value for r in results.values()], method=method, alpha=alpha
-        )
-        return results, correction
+        return _fake_get_many(self._result, symbols, self._skipped_symbols, method=method, alpha=alpha)
 
 
 class FakeStreakLengthService:
-    def __init__(self, result=None, raise_error: Exception | None = None):
+    def __init__(self, result=None, raise_error: Exception | None = None, skipped_symbols=()):
         self._result = result if result is not None else make_streak_length_result()
         self._raise_error = raise_error
+        self._skipped_symbols = set(skipped_symbols)
 
     async def get(self, symbol, window, *, max_bin=4):
         if self._raise_error is not None:
@@ -151,17 +160,14 @@ class FakeStreakLengthService:
     async def get_many(self, symbols, window, *, method="holm", alpha=0.05):
         if self._raise_error is not None:
             raise self._raise_error
-        results = {s: self._result for s in symbols}
-        correction = correct_p_values(
-            list(results.keys()), [r.p_value for r in results.values()], method=method, alpha=alpha
-        )
-        return results, correction
+        return _fake_get_many(self._result, symbols, self._skipped_symbols, method=method, alpha=alpha)
 
 
 class FakeRiseFallService:
-    def __init__(self, result=None, raise_error: Exception | None = None):
+    def __init__(self, result=None, raise_error: Exception | None = None, skipped_symbols=()):
         self._result = result if result is not None else make_rise_fall_result()
         self._raise_error = raise_error
+        self._skipped_symbols = set(skipped_symbols)
 
     async def get(self, symbol, window):
         if self._raise_error is not None:
@@ -171,11 +177,7 @@ class FakeRiseFallService:
     async def get_many(self, symbols, window, *, method="holm", alpha=0.05):
         if self._raise_error is not None:
             raise self._raise_error
-        results = {s: self._result for s in symbols}
-        correction = correct_p_values(
-            list(results.keys()), [r.p_value for r in results.values()], method=method, alpha=alpha
-        )
-        return results, correction
+        return _fake_get_many(self._result, symbols, self._skipped_symbols, method=method, alpha=alpha)
 
 
 __all__ = [

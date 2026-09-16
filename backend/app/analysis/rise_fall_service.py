@@ -2,6 +2,7 @@ import asyncpg
 
 from app.analysis.cache import WindowedStatCache
 from app.analysis.multiple_comparisons import MultipleComparisonResult, correct_p_values
+from app.analysis.partial_batch import run_partial_batch
 from app.analysis.repository import fetch_recent_quotes
 from app.analysis.rise_fall import RiseFallRunResult, rise_fall_run_test
 from app.db import get_last_epoch
@@ -35,14 +36,20 @@ class RiseFallService:
         *,
         method: str = "holm",
         alpha: float = 0.05,
-    ) -> tuple[dict[str, RiseFallRunResult], MultipleComparisonResult]:
+    ) -> tuple[dict[str, RiseFallRunResult], MultipleComparisonResult, dict[str, str]]:
         """Per-symbol rise/fall run test plus a multiple-comparison
-        correction across symbols."""
-        results = {symbol: await self.get(symbol, window_size) for symbol in symbols}
+        correction across the symbols that had enough data. A symbol
+        without data yet is skipped rather than failing the whole batch
+        -- see the returned `skipped` mapping."""
+        results, skipped = await run_partial_batch(
+            symbols, lambda symbol: self.get(symbol, window_size)
+        )
+        if not results:
+            raise ValueError(f"no configured symbol has enough data yet: {skipped}")
         correction = correct_p_values(
             list(results.keys()),
             [r.p_value for r in results.values()],
             method=method,
             alpha=alpha,
         )
-        return results, correction
+        return results, correction, skipped

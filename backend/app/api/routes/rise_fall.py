@@ -24,8 +24,9 @@ async def get_rise_fall_summary(
     service: RiseFallService = Depends(get_rise_fall_service),
     settings: Settings = Depends(get_settings),
 ) -> RiseFallSummaryResponse:
-    results, correction = await service.get_many(settings.symbols, window)
+    results, correction, skipped = await service.get_many(settings.symbols, window)
     return RiseFallSummaryResponse(
         results={s: RiseFallResponse.from_result(r) for s, r in results.items()},
         correction=MultipleComparisonResponse.from_result(correction),
+        skipped=skipped,
     )

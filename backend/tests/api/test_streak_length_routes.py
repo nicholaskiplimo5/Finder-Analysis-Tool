@@ -59,3 +59,28 @@ def test_get_streak_length_summary_applies_correction():
     assert resp.status_code == 200
     body = resp.json()
     assert set(body["results"].keys()) == {"R_100", "R_10"}
+    assert body["skipped"] == {}
+
+
+def test_get_streak_length_summary_skips_symbols_without_data():
+    client = make_test_app(
+        streak_length_routes.router,
+        streak_length_service=FakeStreakLengthService(skipped_symbols=["R_10"]),
+        settings=make_settings(symbols="R_100,R_10"),
+    )
+    resp = client.get("/api/streak-length")
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert set(body["results"].keys()) == {"R_100"}
+    assert list(body["skipped"].keys()) == ["R_10"]
+
+
+def test_get_streak_length_summary_400s_when_every_symbol_skipped():
+    client = make_test_app(
+        streak_length_routes.router,
+        streak_length_service=FakeStreakLengthService(skipped_symbols=["R_100", "R_10"]),
+        settings=make_settings(symbols="R_100,R_10"),
+    )
+    resp = client.get("/api/streak-length")
+    assert resp.status_code == 400

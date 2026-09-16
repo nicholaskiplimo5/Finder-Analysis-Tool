@@ -161,21 +161,28 @@ class ACFWithCorrectionResponse(BaseModel):
 class DigitFrequencySummaryResponse(BaseModel):
     results: dict[str, DigitFrequencyResponse]
     correction: MultipleComparisonResponse
+    # Symbol -> reason, for a configured symbol with too little data yet
+    # (e.g. still mid cold-start backfill) rather than failing the whole
+    # summary over one symbol not being ready.
+    skipped: dict[str, str]
 
 
 class ConditionalDigitSummaryResponse(BaseModel):
     results: dict[str, ConditionalDigitResponse]
     correction: MultipleComparisonResponse
+    skipped: dict[str, str]
 
 
 class StreakLengthSummaryResponse(BaseModel):
     results: dict[str, StreakLengthResponse]
     correction: MultipleComparisonResponse
+    skipped: dict[str, str]
 
 
 class RiseFallSummaryResponse(BaseModel):
     results: dict[str, RiseFallResponse]
     correction: MultipleComparisonResponse
+    skipped: dict[str, str]
 
 
 class SymbolInfo(BaseModel):

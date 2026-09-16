@@ -29,8 +29,9 @@ async def get_streak_length_summary(
     service: StreakLengthService = Depends(get_streak_length_service),
     settings: Settings = Depends(get_settings),
 ) -> StreakLengthSummaryResponse:
-    results, correction = await service.get_many(settings.symbols, window)
+    results, correction, skipped = await service.get_many(settings.symbols, window)
     return StreakLengthSummaryResponse(
         results={s: StreakLengthResponse.from_result(r) for s, r in results.items()},
         correction=MultipleComparisonResponse.from_result(correction),
+        skipped=skipped,
     )
